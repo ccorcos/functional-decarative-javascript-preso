@@ -1,0 +1,15 @@
+
+@font-face {
+  font-family: 'FiraCode';
+  src: url('assets/FiraCode-Regular.woff2') format('woff2'),
+       url('assets/FiraCode-Regular.woff') format('woff');
+}
+
+.reveal pre code {
+  font-family: 'FiraCode';
+  padding: 15px;
+}
+
+img.large {
+  height: 16em;
+}

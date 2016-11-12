@@ -1,0 +1,798 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="assets/reveal.js/css/reveal.css">
+        <link rel="stylesheet" href="assets/reveal.js/css/theme/night.css">
+        <link rel="stylesheet" href="assets/reveal.js/lib/css/zenburn.css">
+        <link rel="stylesheet" href="custom.css">
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+                <section>
+                  <h2>Functional Declarative (Maintainable) JavaScript</h2>
+                  <h5>by Chet Corcos (Nov 2016)</h5>
+                  <p><a href="http://www.chetcorcos.com/functional-decarative-javascript-preo">chetcorcos.com/functional-decarative-javascript-preo</a></p>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Suppose we have a user that looks like this:</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const me = {
+  name: {
+    first: 'Chet',
+    last: 'Corcos',
+  },
+  birthday: {
+    month: 12,
+    day: 28,
+  },
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Maybe we want to know if today is this user's birthday:</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+// const me = {
+//   name: {
+//     first: 'Chet',
+//     last: 'Corcos',
+//   },
+//   birthday: {
+//     month: 12,
+//     day: 28,
+//   },
+// }
+
+const isBirthday = (user, date) => {
+  return date.getMonth() + 1 === user.birthday.month // month is zero indexed
+      &amp;&amp; date.getDate() === user.birthday.day
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Maybe we want to format the user info:</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+// const me = {
+//   name: {
+//     first: 'Chet',
+//     last: 'Corcos',
+//   },
+//   birthday: {
+//     month: 12,
+//     day: 28,
+//   },
+// }
+
+const formatUser = user => {
+  user.name = user.name.first + user.name.last
+  user.birthday = user.birthday.month + '/' + user.birthday.day
+  return user
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Let's see if it works:</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const today = new Date()
+
+isBirthday(me, today) // false
+
+formatUser(me) // {name: 'Chet Corcos', birthday: '12/18'}
+
+isBirthday(me, today) <span class="fragment">// Error?!</span>
+                    </code>
+                  </pre>
+                  <span class="fragment">
+                  <p>The problem is <i>in-place mutation.</i></p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const formatUser = user => {
+  // mutated in place
+  user.name = user.name.first + user.name.last
+  user.birthday = user.birthday.month + '/' + user.birthday.day
+  return user
+}
+                    </code>
+                  </pre>
+                  </span>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Let's return a new object instead.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+
+// const formatUser = user => {
+//   user.name = user.name.first + user.name.last
+//   user.birthday = user.birthday.month + '/' + user.birthday.day
+//   return user
+// }
+
+const formatUser = user => {
+  return {
+    name: user.name.first + user.name.last,
+    birthday: user.birthday.month + '/' + user.birthday.day,
+  }
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>And now it works:</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const today = new Date()
+
+isBirthday(me, today) // false
+
+formatUser(me) // {name: 'Chet Corcos', birthday: '12/18'}
+
+isBirthday(me, today) // false
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p><strong>Lesson 1:</strong> do not mutate data in-place</p>
+                  <ul>
+                    <li><a href="https://en.wikipedia.org/wiki/Immutable_object">immutable data</a> is easier to <i>understand</i></li>
+                    <li><a href="https://en.wikipedia.org/wiki/Immutable_object">immutable data</a> is easier to <i>predict</i></li>
+                    <li><a href="https://en.wikipedia.org/wiki/Immutable_object">immutable data</a> is easier to <i>statically analyze</i></li>
+                  </ul>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Suppose we have some data that looks like this:</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const loans = [
+  {status: 'due', amount: 10},
+  {status: 'overdue', amount: 20},
+  {status: 'overdue', amount: 30},
+]
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Maybe we want to find the total overdue amount:</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+// const loans = [
+//   {status: 'due', amount: 10},
+//   {status: 'overdue', amount: 20},
+//   {status: 'overdue', amount: 30},
+// ]
+
+const getTotalOverdueAmount = loans => {
+  let total = 0
+  for (let i = 0; i < loans.length; i++) {
+    if (loans[i].status === 'overdue') {
+      total += loans[i].amount
+    }
+  }
+  return total
+}
+
+<span class="fragment">// and it works
+getTotalOverdueAmount(loans) // 50</span>
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Now there's a new requirement and we want to exclude disputed loans from the calculation.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const loans = [
+  {status: 'due', amount: 10, disputed: false},
+  {status: 'overdue', amount: 20, disputed: true},
+  {status: 'overdue', amount: 30, disputed: false},
+]
+
+const getTotalOverdueAmount = loans => {
+  let total = 0
+  for (let i = 0; i < loans.length; i++) {
+    if (loans[i].status === 'overdue') {
+      // add a new condition
+      if (!loans[i].disputed) {
+        total += loans[i].amount
+      }
+    }
+  }
+  return total
+}
+
+<span class="fragment">// and it works
+getTotalOverdueAmount(loans) // 30</span>
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>So what's wrong with this code?</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const getTotalOverdueAmount = loans => {
+  let total = 0
+  for (let i = 0; i < loans.length; i++) {
+    if (loans[i].status === 'overdue') {
+      if (!loans[i].disputed) {
+        total += loans[i].amount
+      }
+    }
+  }
+  return total
+}
+                    </code>
+                  </pre>
+                  <ul>
+                    <li class="fragment">Hard to read!</li>
+                    <li class="fragment">This code will rot quickly.</li>
+                    <li class="fragment">This code isn't <i>declarative</i>.</li>
+                  </ul>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>What is <a href="https://en.wikipedia.org/wiki/Declarative_programming">declarative</a> programming?</p>
+                  <p class="fragment">Say what you want, not how you want it done.</p>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Let's rewrite this code to be <i>more</i> declarative.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+// const getTotalOverdueAmount = loans => {
+//   let total = 0
+//   for (let i = 0; i < loans.length; i++) {
+//     if (loans[i].status === 'overdue') {
+//       total += loans[i].amount
+//     }
+//   }
+//   return total
+// }
+
+const getTotalOverdueAmount = loans => {
+  const overdueLoans = loans.filter(loan => loan.status === 'overdue')
+  const totalAmount = overdueLoans.reduce((total, loan) => total + loan.amount, 0)
+  return totalAmount
+}
+                    </code>
+                  </pre>
+                  <p class="fragment">We didn't say how to iterate over the list...</p>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>... but we can do even better.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+// const getTotalOverdueAmount = loans => {
+//   const overdueLoans = loans.filter(loan => loan.status === 'overdue')
+//   const totalAmount = overdueLoans.reduce((total, loan) => total + loan.amount, 0)
+//   return totalAmount
+// }
+
+const sum = (a, b) => a + b
+
+const prop = key => obj => obj[key] <span class="fragment">// a curried function!</span>
+
+const propEq = (prop, value) => obj => obj[prop] === value
+
+const getTotalOverdueAmount = loans => {
+  const overdueLoans = loans.filter(propEq('status', 'overdue'))
+  const overdueAmounts = overdueLoans.map(prop('amount'))
+  const totalAmount = overdueAmounts.reduce(sum, 0)
+  return totalAmount
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>A <a href="https://en.wikipedia.org/wiki/Currying">curried funtion</a> takes its argument's one at a time.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const prop = key => obj => obj[key]
+
+const getAmount = props('amount')
+// getAmount = obj => obj['amount']
+
+const overdueAmounts = overdueLoans.map(prop('amount'))
+                    </code>
+                  </pre>
+                  <div class="fragment">
+                    <p>But some syntactic sugar is OK.</p>
+                    <pre>
+                      <code data-trim data-noescape class="language-js">
+const propEq = (prop, value) => obj => obj[prop] === value
+
+const isOverdue = propEq('status', 'overdue')
+                      </code>
+                    </pre>
+                  </div>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Now let's filter disputed loans as well.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+// const getTotalOverdueAmount = loans => {
+//   const overdueLoans = loans.filter(propEq('status', 'overdue'))
+//   const overdueAmounts = overdueLoans.map(prop('amount'))
+//   const totalAmount = overdueAmounts.reduce(sum, 0)
+//   return totalAmount
+// }
+
+const getTotalOverdueAmount = loans => {
+  const overdueLoans = loans.filter(propEq('status', 'overdue'))
+  const overdueAmounts = overdueLoans.map(prop('amount'))
+  // create a new variable
+  const notDiputed = overdueAmounts.filter(propEq('disputed', false))
+  // filter with the new variable
+  const totalAmount = notDiputed.reduce(sum, 0)
+  return totalAmount
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>We can still do even better.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+// const getTotalOverdueAmount = loans => {
+//   const overdueLoans = loans.filter(propEq('status', 'overdue'))
+//   const notDiputed = overdueLoans.filter(propEq('disputed', false))
+//   const totalAmount = notDiputed.reduce(sum, 0)
+//   return totalAmount
+// }
+
+const filter = fn => list => list.filter(fn)
+
+const map = fn => list => list.map(fn)
+
+const reduce = (fn, init) => list => list.reduce(fn, init)
+
+const pipe = fnList => value => fnList.reduce((acc, fn) => fn(acc), value)
+
+const getTotalOverdueAmount = pipe([   <span class="fragment">// a point-free function!</span>
+  filter(propEq('status', 'overdue')), // filter overdue
+  filter(propEq('disputed', false)),   // filter disputed
+  map(prop('amount')),                 // get the amounts
+  reduce(sum, 0),                      // sum them
+])
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>What is a <a href="https://en.wikipedia.org/wiki/Tacit_programming">point-free</a> function?</p>
+                  <p>"Point-free programming (a.k.a tacit programming) is when a function never identifies its arguments (points) and is instead a specified as composition of other functions."</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const getTotalOverdueAmount = pipe([
+  filter(propEq('status', 'overdue')),
+  filter(propEq('disputed', false)),
+  map(prop('amount')),
+  reduce(sum, 0),
+])
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p><strong>Lesson 2:</strong> use function composition</p>
+                  <ul>
+                    <li><a href="https://en.wikipedia.org/wiki/Function_composition">funciton composition</a> is easier to <i>read</i></li>
+                    <li><a href="https://en.wikipedia.org/wiki/Function_composition">funciton composition</a> is easier to <i>understand</i></li>
+                    <li><a href="https://en.wikipedia.org/wiki/Function_composition">funciton composition</a> is easier to <i>maintain</i></li>
+                  </ul>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Now our code is declarative, but is it <i>performant</i>?</p>
+                  <p>How many times are we iterating through the list?</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const getTotalOverdueAmount = pipe([
+  filter(propEq('status', 'overdue')), // one
+  filter(propEq('disputed', false)),   // two
+  map(prop('amount')),                 // three
+  reduce(sum, 0),                      // four times!
+])
+                    </code>
+                  </pre>
+                  <p class="fragment">We can use <i>generators</i>!</p>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>What's a <a href="https://en.wikipedia.org/wiki/Generator_(computer_programming)">generator</a>?</p>
+                  <p>A generator is a function that yields values.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+function *Counter() {
+  let id = 0
+  while(true) {
+    yield id++
+  }
+}
+
+const counter = new Counter()
+counter.next() // {value: 1, done: false}
+counter.next() // {value: 2, done: false}
+counter.next() // {value: 3, done: false}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Why do we use generators?</p>
+                  <p>Generators help us iterate <a href="https://en.wikipedia.org/wiki/Lazy_evaluation">lazily</a> over lists.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const list = [1, 2, 3]
+
+const ListGenerator = new list[Symbol.iterator]
+
+// WARNING: generators are stateful!
+const generator = new ListGenerator()
+
+generator.next() // {value: 1, done: false}
+generator.next() // {value: 2, done: false}
+generator.next() // {value: 3, done: false}
+generator.next() // {value: undefined, done: true}
+
+[...ListGenerator] // [1, 2, 3]
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Let's make a lazy map!</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const lazyMap = fn => function*(Generator) {
+  const generator = new Generator()
+  while(true) {
+    const result = generator.next()
+    if (result.done) {
+      break
+    }
+    yield fn(result.value)
+  }
+}
+                    </code>
+                  </pre>
+                </section>                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Let's make a lazy filter!</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const lazyFilter = fn => function*(Generator) {
+  const generator = new Generator()
+  while(true) {
+    const result = generator.next()
+    if (result.done) {
+      break
+    }
+    if (fn(result.value)) {
+      yield result.value
+    }
+  }
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Let's make a lazy reduce!</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const lazyReduce = (fn, init) => function*(Generator) {
+  const generator = new Generator()
+  let acc = init
+  while(true) {
+    const result = generator.next()
+    if (result.done) {
+      break
+    }
+    acc = fn(acc, result.value)
+    yield acc
+  }
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Let's make a lazy pipe!</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const lazyPipe = fnList => iterable => {
+  const InputGenerator = new iterable[Symbol.iterable]()
+  const OutputGenerator = fnList.reduce((gen, fn) => fn(gen), InputGenerator)
+  return [...OutputGenerator]
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>And now we're declarative and performant!</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+// const getTotalOverdueAmount = pipe([
+//   filter(propEq('status', 'overdue')),
+//   filter(propEq('disputed', false)),
+//   map(prop('amount')),
+//   reduce(sum, 0),
+// ])
+
+const getTotalOverdueAmount = lazyPipe([
+  lazyFilter(propEq('status', 'overdue')),
+  lazyFilter(propEq('disputed', false)),
+  lazyMap(prop('amount')),
+  lazyReduce(sum, 0),
+])
+                    </code>
+                  </pre>
+                  <p class="fragment">*more performant <span class="fragment">(space complexity)</span></p>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Now suppose we're manipulating a large amount of data.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const actions = [
+  {type: 'click-make-payment', loanId: 'JJR5-0PLM'},
+  {type: 'change-payment-method', instrumentId: 'AF3S-353H'},
+  {type: 'change-amount', value: 'upcoming-count'},
+  {type: 'submit-make-payment'}
+  // many many more...
+]
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>What happens when we want to append an action to this array?</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const appendAction = (action) => {
+  actions.push(action) <span class="fragment">// NO! That's impure!</span>
+}
+                    </code>
+                    <code data-trim data-noescape class="language-js fragment">
+const appendAction = (actions, action) => {
+  actions.push(action) <span class="fragment">// NO! That's in-place mutation!</span>
+  return actions
+}
+                    </code>
+                    <code data-trim data-noescape class="language-js fragment">
+const appendAction = (actions, action) => {
+  return [...actions, action] <span class="fragment">// Much better...</span><span class="fragment"> but is it performant?</span>
+}
+                    </code>
+                  </pre>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>Why immutability isn't performant?</p>
+                  <ul>
+                    <li>must clone the array just to append an item</li>
+                    <li>lots of memory for the garbage collector to clean up</li>
+                    <ul><li>aka <a href="https://en.wikipedia.org/wiki/Thrashing_(computer_science)">garbage thrashing</a></li></ul>
+                  </ul>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+const appendAction = (actions, action) => {
+  return [...actions, action]
+}
+                    </code>
+                  </pre>
+                  <p class="fragment">We can use <i>persistent data structures</i>!</p>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>What are <a href="https://en.wikipedia.org/wiki/Persistent_data_structure">persistent data structures</a>?</p>
+                  <p>Data structures that preseve the previous version of itself when its modified... like a linked-list!</p>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>What is a <i>linked list</i>?</p>
+                  <p class="fragment">... just kidding</p>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>How do we use <i>persistent data structures</i> without hating our lives?</p>
+                  <div class="fragment">
+                    <p><a href="https://facebook.github.io/immutable-js/">ImmutableJS</a> to the rescue!</p>
+                    <pre>
+                      <code data-trim data-noescape class="language-js">
+import { List } from 'immutable'
+
+const actions = new List([
+  {type: 'click-make-payment', loanId: 'JJR5-0PLM'},
+  {type: 'change-payment-method', instrumentId: 'AF3S-353H'},
+  {type: 'change-amount', value: 'upcoming-count'},
+  {type: 'submit-make-payment'}
+  // many many more...
+])
+
+const trackAction = (actions, action) => {
+  return actions.push(action)
+}
+                      </code>
+                    </pre>
+                  </div>
+                </section>
+                <section>
+                  <h2>Functional Programming</h2>
+                  <p>ImmutableJS has all kinds of persistent data structures.</p>
+                  <pre>
+                    <code data-trim data-noescape class="language-js">
+import { Map } from 'immutable'
+
+const me = new Map({
+  name: new Map({
+    first: 'Chet',
+    last: 'Corcos',
+  }),
+  birthday: new Map({
+    month: 12,
+    day: 28,
+  })
+})
+
+me.getIn(['name', 'first']) // 'Chet'
+                  </code>
+                </pre>
+              </section>
+              <section>
+                <h2>Functional Programming</h2>
+                <p><strong>Lesson 3:</strong> functional programming can be performant!</p>
+                <ul>
+                  <li>use <a href="https://en.wikipedia.org/wiki/Generator_(computer_programming)">generators</a></li>
+                  <li>use <a href="https://en.wikipedia.org/wiki/Persistent_data_structure">persistent data structures</a></li>
+                </ul>
+              </section>
+              <section>
+                <h2>Extra Resources</h2>
+                <ul>
+                  <li><a href="http://fr.umio.us/why-ramda/">"Why Ramda?"</a> -- about currying, function composition, and point-free programming</li>
+                  <li><a href="https://drboolean.gitbooks.io/mostly-adequate-guide/content/">"Mostly Adequate Guide"</a> ...to functional programming in JavaScript</li>
+                  <li><a href="https://medium.com/@chetcorcos/functional-programming-for-javascript-people-1915d8775504">"Functional Programming for JavaScript People"</a></li>
+                  <li><a href="https://www.youtube.com/watch?v=-6BsiVyC1kM">"The Values of Values"</a> -- a talk about why Immutability is good.</li>
+                  <li><a href="https://www.infoq.com/presentations/Simple-Made-Easy">"Simple Made Easy"</a> -- a talk motivating functional programming concepts from a Java perspective</li>
+                </ul>
+              </section>
+              <section>
+                <h2>Bonus Round</h2>
+              </section>
+              <section>
+                <h2>Bonus Round</h2>
+                <pre>
+                  <code data-trim data-noescape class="language-js">
+// compose is the opposite of pipe
+const compose = a => b => c => a(b(c))
+
+// some helper functions from before
+const map = fn => l => l.map(fn)
+const reduce = (fn, init) => l => l.reduce(fn, init)
+const prop = key => obj => obj[key]
+
+// some more helpers
+const add = (a, b) => a + b
+const sum = reduce(add, 0)
+                  </code>
+                </pre>
+              </section>
+              <section>
+                <h2>Bonus Round</h2>
+                <pre>
+                  <code data-trim data-noescape class="language-js">
+const compose = a => b => c => a(b(c))
+
+const getTotalAmount = compose(sum)(map(prop('amount')))
+// const getTotalAmount = pipe([
+//   map(prop('amount')),
+//   sum,
+// ])
+
+const loans = [
+  {status: 'due', amount: 10},
+  {status: 'overdue', amount: 20},
+  {status: 'overdue', amount: 30},
+]
+
+getTotalAmount(loans) // => 60
+                  </code>
+                </pre>
+              </section>
+              <section>
+                <h2>Bonus Round</h2>
+                <pre>
+                  <code data-trim data-noescape class="language-js">
+const compose = a => b => c => a(b(c))
+const blackbird = compose(compose)(compose)
+<span class="fragment">
+const aggregate = blackbird(sum)(map)
+
+const totalAmount = aggregate(prop('amount'))
+totalAmount(loans) // => 60
+</span>
+                  </code>
+                </pre>
+              </section>
+              <section>
+                <h2>Bonus Round</h2>
+                <p>These are well established abstractions!</p>
+                <pre>
+                  <code data-trim data-noescape class="language-js">
+const compose = a => b => c => a(b(c))         // haskell> a . b
+const blackbird = compose(compose)(compose)    // haskell> (.) . (.)
+const aggregate = blackbird(sum)(map)          // haskell> sum ... map
+                  </code>
+                </pre>
+              </section>
+              <section>
+                <h2>Bonus Round</h2>
+                <p><strong>Lesson 4:</strong> abstraction</p>
+                <ul>
+                  <li>no abstraction &gt; bad abstraction</li>
+                  <li>use established abstractions (e.g. map, filter, reduce)</li>
+                  <li>learn more established abstractions (e.g. pipe, compose, blackbird and <a href="https://github.com/fantasyland/fantasy-birds/blob/master/README.md">other <i>combinators</i></a>)</li>
+                  <li class="fragment">good luck and go learn!</li>
+                </ul>
+              </section>
+          </section>
+          <section>
+            <h2>Bonus Resources</h2>
+            <ul>
+              <li><a href="https://www.youtube.com/watch?v=seVSlKazsNk&list=PLcGKfGEEONaDvuLDFFKRfzbsaBuVVXdYa&index=20">"Point Free or Die"</a></li>
+              <li><a href="https://github.com/fantasyland/fantasy-land">Fantasy Land</a></li>
+              <li><a href="https://github.com/fantasyland/fantasy-birds">Fantasy Birds</a></li>
+            </ul>
+          </section>
+        </div>
+      </div>
+      <script src="assets/reveal.js/lib/js/head.min.js"></script>
+      <script src="assets/reveal.js/js/reveal.js"></script>
+      <script>
+        Reveal.initialize({
+          history: true,
+          dependencies: [
+            // Cross-browser shim that fully implements classList - https://github.com/eligrey/classList.js/
+            { src: 'assets/reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+
+            // Interpret Markdown in <section> elements
+            { src: 'assets/reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+            { src: 'assets/reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+
+            // Syntax highlight for <code data-trim data-noescape class="language-js"> elements
+            { src: 'assets/reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+
+            // Zoom in and out with Alt+click
+            { src: 'assets/reveal.js/plugin/zoom-js/zoom.js', async: true },
+
+            // Speaker notes
+            { src: 'assets/reveal.js/plugin/notes/notes.js', async: true },
+
+            // MathJax
+            { src: 'assets/reveal.js/plugin/math/math.js', async: true }
+          ]
+        });
+    </script>
+  </body>
+</html>
