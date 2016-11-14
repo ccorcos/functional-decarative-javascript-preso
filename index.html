@@ -71,7 +71,7 @@ const isBirthday = (user, date) => {
 // }
 
 const formatUser = user => {
-  user.name = user.name.first + user.name.last
+  user.name = user.name.first + ' ' + user.name.last
   user.birthday = user.birthday.month + '/' + user.birthday.day
   return user
 }
@@ -98,7 +98,7 @@ isBirthday(me, today) <span class="fragment">// Error?!</span>
                     <code data-trim data-noescape class="language-js">
 const formatUser = user => {
   // mutated in place
-  user.name = user.name.first + user.name.last
+  user.name = user.name.first + ' ' + user.name.last
   user.birthday = user.birthday.month + '/' + user.birthday.day
   return user
 }
@@ -113,14 +113,14 @@ const formatUser = user => {
                     <code data-trim data-noescape class="language-js">
 
 // const formatUser = user => {
-//   user.name = user.name.first + user.name.last
+//   user.name = user.name.first + ' ' + user.name.last
 //   user.birthday = user.birthday.month + '/' + user.birthday.day
 //   return user
 // }
 
 const formatUser = user => {
   return {
-    name: user.name.first + user.name.last,
+    name: user.name.first + ' ' + user.name.last,
     birthday: user.birthday.month + '/' + user.birthday.day,
   }
 }
@@ -305,7 +305,7 @@ const getTotalOverdueAmount = loans => {
                     <code data-trim data-noescape class="language-js">
 const prop = key => obj => obj[key]
 
-const getAmount = props('amount')
+const getAmount = prop('amount')
 // getAmount = obj => obj['amount']
 
 const overdueAmounts = overdueLoans.map(prop('amount'))
